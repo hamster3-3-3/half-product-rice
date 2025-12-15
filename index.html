@@ -232,12 +232,12 @@
 
                     <!-- 總分、評論與刪除按鈕 -->
                     <div class="mt-8 pt-6 border-t border-stone-200 grid grid-cols-1 md:grid-cols-2 gap-6">
-                         <!-- Overall Score -->
+                         <!-- Overall Score (現在是自動計算結果，不可編輯) -->
                         <div>
-                            <label for="${inputPrefix}score" class="block text-sm font-bold text-stone-700 mb-2">整體分數 (Overall Score)</label>
+                            <label class="block text-sm font-bold text-stone-700 mb-2">整體分數 (總和 x 2)</label>
                             <div class="flex items-center gap-4">
-                                <input type="number" id="${inputPrefix}score" value="75" min="0" max="100" class="w-24 text-2xl font-bold text-center text-teal-700 border-2 border-teal-100 rounded-lg py-2 focus:outline-none focus:border-teal-500">
-                                <span class="text-stone-400">/ 100</span>
+                                <span id="${valPrefix}totalScore" class="text-2xl font-bold text-teal-700">36</span>
+                                <span class="text-stone-400">/ 60 (滿分)</span>
                             </div>
                         </div>
                         <!-- Delete Button -->
@@ -270,13 +270,13 @@
             this.chartId = `${this.uniqueId}-radarChart`;
             this.chartInstance = null;
             
-            // 數據初始化
+            // 數據初始化 (整體分數 now defaults to 36, based on 6x3*2)
             this.data = {
                 assessor: initialAssessor,
                 department: initialDepartment,
                 id: id,
                 scores: { appearance: 3, aroma: 3, texture: 3, viscosity: 3, elasticity: 3, taste: 3 },
-                total: 75,
+                total: 36, // 3 * 6 * 2 = 36
                 comments: ""
             };
             
@@ -287,20 +287,30 @@
                 container.insertAdjacentHTML('beforeend', template);
                 this.element = document.getElementById(this.uniqueId);
             };
+            
+            // 計算整體分數 (六項分數總和 * 2)
+            this.calculateTotalScore = () => {
+                const sum = Object.values(this.data.scores).reduce((a, b) => a + b, 0);
+                this.data.total = sum * 2;
+                document.getElementById(`${this.valPrefix}totalScore`).innerText = this.data.total;
+            };
 
             // 抓取當前表單數據並更新內部狀態
             this.updateDataFromInputs = () => {
                 this.data.assessor = document.getElementById(`${this.inputPrefix}assessor`).value.trim();
                 this.data.department = document.getElementById(`${this.inputPrefix}department`).value.trim(); 
                 this.data.id = document.getElementById(`${this.inputPrefix}id`).value.trim();
-                this.data.total = parseInt(document.getElementById(`${this.inputPrefix}score`).value) || 0;
                 this.data.comments = document.getElementById(`${this.inputPrefix}comments`).value.trim(); 
                 
                 scoreKeys.forEach(key => {
                     const value = document.getElementById(`${this.inputPrefix}${key}`).value;
-                    this.data.scores[key] = Math.round(parseFloat(value));
+                    // 將滑桿值強制轉為整數 (1-5)
+                    this.data.scores[key] = Math.round(parseFloat(value)); 
                 });
                 
+                // *** 重要變更：自動計算總分 ***
+                this.calculateTotalScore();
+
                 // 更新顯示的樣品 ID
                 this.element.querySelector('[data-id-display]').innerText = `樣品編號: ${this.data.id}`;
 
@@ -374,8 +384,8 @@
                     });
                 });
 
-                // 其他文字和數字輸入欄位
-                [`${this.inputPrefix}score`, `${this.inputPrefix}assessor`, `${this.inputPrefix}department`, `${this.inputPrefix}id`, `${this.inputPrefix}comments`].forEach(id => {
+                // 其他文字輸入欄位 (總分已移除)
+                [`${this.inputPrefix}assessor`, `${this.inputPrefix}department`, `${this.inputPrefix}id`, `${this.inputPrefix}comments`].forEach(id => {
                      document.getElementById(id).addEventListener('input', this.updateDataFromInputs);
                 });
                 
@@ -390,8 +400,8 @@
             const ctxRadar = document.getElementById(this.chartId).getContext('2d');
             this.chartInstance = this.initChart(ctxRadar);
             this.setupListeners();
-            // 在圖表初始化後，確保滑塊值與 data 同步
-            this.updateChart(); 
+            // 確保初始數據和圖表同步
+            this.updateDataFromInputs(); 
         }
 
         /**
@@ -459,7 +469,7 @@
 
             // 2. 定義 CSV 標頭
             const headers = [
-                "評測者", "部門", "樣品編號", ...scoreLabels, "整體分數", "樣品評價內容"
+                "評測者", "部門", "樣品編號", ...scoreLabels, "整體分數 (總分x2)", "樣品評價內容"
             ];
             
             // 3. 準備數據行 (多行)
@@ -477,7 +487,8 @@
                     data.scores.viscosity,
                     data.scores.elasticity,
                     data.scores.taste,
-                    data.total,
+                    // 這裡使用自動計算的總分 (已在 updateDataFromInputs 中計算)
+                    data.total, 
                     commentsCsvSafe
                 ].join(',');
             });
