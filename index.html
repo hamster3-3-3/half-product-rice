@@ -3,535 +3,262 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>米飯感官評測儀表板 | Rice Sensory Evaluation Dashboard</title>
-    
-    <!-- 所有的 CSS 和 JS 庫都透過 CDN 載入，非常適合靜態網站託管 -->
+    <title>池上飯感官評測系統</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
     <style>
-        /* 自定義樣式 */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #f5f5f4; }
-        ::-webkit-scrollbar-thumb { background: #d6d3d1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #a8a29e; }
-        .chart-container {
-            position: relative;
-            width: 100%;
-            max-width: 450px; 
-            margin-left: auto;
-            margin-right: auto;
-            height: 300px; /* 略微縮小以適應兩欄佈局 */
-            max-height: 400px;
-        }
-        @media (max-width: 640px) {
-            .chart-container { height: 250px; }
-        }
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 18px; 
-            height: 18px;
-            border-radius: 50%;
-            background: #0d9488;
-            cursor: pointer;
-            box-shadow: 0 0 4px rgba(0, 0, 0, 0.4);
-            margin-top: -8px; 
-        }
-        input[type="range"] {
-             height: 4px;
-             margin-top: 4px;
-        }
-        /* 評測者元數據始終為三欄 */
-        .input-meta-grid {
-             display: grid;
-             grid-template-columns: repeat(3, minmax(0, 1fr));
-             gap: 1rem; /* gap-4 */
-        }
-        /* 定義每個樣品組件內部的佈局 (表單+圖表) */
-        .sample-content-grid {
-             display: grid;
-             grid-template-columns: 1fr;
-             gap: 1.5rem;
-        }
-        @media (min-width: 1024px) {
-            .sample-content-grid {
-                grid-template-columns: 2fr 3fr; /* 2/5 for sliders, 3/5 for chart on desktop */
-            }
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap');
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f3f4f6; }
+        .score-card { transition: all 0.2s; cursor: pointer; border: 2px solid transparent; }
+        .score-card.active { border-color: #1f2937; background-color: #f9fafb; }
+        .score-card:hover { transform: translateY(-2px); }
     </style>
 </head>
-<body class="bg-stone-50 text-stone-800 font-sans leading-relaxed selection:bg-teal-100 selection:text-teal-900">
-
-    <!-- Header & Navigation -->
-    <header class="bg-white border-b border-stone-200 shadow-sm sticky top-0 z-50">
-        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
-            <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 bg-teal-600 rounded-full flex items-center justify-center text-white font-bold text-xl">米</div>
-                <div>
-                    <h1 class="text-lg md:text-xl font-bold text-stone-900 tracking-tight">米飯感官評測</h1>
-                    <p class="text-xs text-stone-500 uppercase tracking-wider hidden sm:block">Rice Blind Tasting Assessment</p>
-                </div>
+<body class="p-4 md:p-8">
+    <div class="max-w-6xl mx-auto">
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row justify-between items-end mb-8 border-b-2 border-gray-800 pb-6">
+            <div>
+                <h1 class="text-4xl font-black text-gray-900 tracking-tight">池上飯盲測評分系統</h1>
+                <p class="text-gray-500 mt-2 font-medium">專業感官檢測紀錄表 / 加權計分版本</p>
             </div>
-            <div class="flex space-x-2 sm:space-x-3">
-                
-                <!-- 輸出數據按鈕 (下載所有樣品的數據) -->
-                <button id="submitBtn" class="bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium py-2 px-3 sm:px-4 rounded-lg shadow-md transition-colors flex items-center gap-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L10 11.586l1.293-1.293a1 1 0 111.414 1.414l-2 2a1 1 0 01-1.414 0l-2-2a1 1 0 010-1.414z" clip-rule="evenodd" />
-                        <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v7a1 1 0 11-2 0V3a1 1 0 011-1z" clip-rule="evenodd" />
-                    </svg>
-                    <span id="submitBtnText">下載所有樣品 CSV 表格</span>
+            <div class="mt-4 md:mt-0 flex gap-3">
+                <button onclick="exportCSV()" class="bg-gray-900 text-white px-8 py-3 rounded-xl font-bold hover:bg-gray-800 transition shadow-lg flex items-center gap-2">
+                    匯出 CSV 報表
+                </button>
+                <button onclick="resetForm()" class="bg-white text-gray-600 px-6 py-3 rounded-xl font-bold border border-gray-200 hover:bg-gray-50 transition">
+                    清空重置
                 </button>
             </div>
         </div>
-    </header>
 
-    <main class="container mx-auto px-4 py-6 md:py-8 space-y-8 md:space-y-12">
-
-        <!-- Intro Section -->
-        <section class="max-w-4xl mx-auto text-center space-y-3">
-            <h2 class="text-2xl md:text-3xl font-bold text-stone-800">半成品(米飯)盲測評分標準</h2>
-            <p class="text-base text-stone-600 max-w-2xl mx-auto">
-                請透過六大感官指標（外觀、氣味、軟硬、粘度、彈力、味道）對所有樣品進行全方位評估。
-            </p>
-        </section>
-
-        <!-- Samples Container: 所有動態生成的評測區塊將被加入到這裡 -->
-        <div id="samples-container" class="max-w-6xl mx-auto space-y-8">
-            <!-- Dynamic Sample Blocks will be injected here -->
-        </div>
-
-        <!-- 新增樣品按鈕 (移動到 samples-container 之後) -->
-        <div class="max-w-6xl mx-auto pt-4 pb-2">
-            <button id="addNewSampleBtn" class="w-full bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 px-4 rounded-xl transition-colors shadow-lg shadow-teal-300/50 flex items-center justify-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
-                </svg>
-                新增樣品評測數據 (展開一個新的評測區塊)
-            </button>
-        </div>
-
-
-        <!-- Reference Guide (Scoring Notes) -->
-        <section class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
-            <div class="bg-red-50 border border-red-100 rounded-xl p-5 hover:shadow-md transition-shadow">
-                <div class="flex items-center gap-3 mb-2">
-                    <span class="flex items-center justify-center w-8 h-8 rounded-full bg-red-100 text-red-600 font-bold">1</span>
-                    <h4 class="font-bold text-red-800">極差 (Poor)</h4>
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <!-- 左側評分區 -->
+            <div class="lg:col-span-8 space-y-8">
+                <!-- 基本資訊 -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm grid grid-cols-1 md:grid-cols-2 gap-6 border border-gray-100">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">評測者 Assessor</label>
+                        <input type="text" id="assessor" class="w-full bg-gray-50 border-none rounded-xl p-3 focus:ring-2 focus:ring-gray-400 outline-none" placeholder="輸入評測人員姓名">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">樣品編號 Sample ID</label>
+                        <input type="text" id="sampleId" class="w-full bg-gray-50 border-none rounded-xl p-3 focus:ring-2 focus:ring-gray-400 outline-none" placeholder="例如: A-01">
+                    </div>
                 </div>
-                <p class="text-sm text-red-700 leading-snug">無法接受的品質或特性。例如：有異味、夾生、色澤灰暗。</p>
+
+                <!-- 一、外觀 -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                        <span class="w-8 h-8 bg-gray-900 text-white rounded-lg flex items-center justify-center text-sm">1</span>
+                        一、外觀 (Appearance)
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3" id="group-appearance">
+                        <div onclick="setScore('appearance', 1, 0)" class="score-card p-4 rounded-xl bg-gray-50 flex justify-between items-center" data-val="1">
+                            <span class="text-gray-700">1. 飯粒不完整、無光澤</span>
+                            <span class="font-bold text-red-500">0 分</span>
+                        </div>
+                        <div onclick="setScore('appearance', 2, 10)" class="score-card p-4 rounded-xl bg-gray-50 flex justify-between items-center" data-val="2">
+                            <span class="text-gray-700">2. 飯粒不完整、有光澤</span>
+                            <span class="font-bold text-blue-600">10 分</span>
+                        </div>
+                        <div onclick="setScore('appearance', 3, 20)" class="score-card p-4 rounded-xl bg-gray-50 flex justify-between items-center active" data-val="3">
+                            <span class="text-gray-700 font-bold">3. 飯粒完整、有光澤</span>
+                            <span class="font-bold text-green-600">20 分</span>
+                        </div>
+                        <div onclick="setScore('appearance', 4, 10)" class="score-card p-4 rounded-xl bg-gray-50 flex justify-between items-center" data-val="4">
+                            <span class="text-gray-700">4. 飯粒完整、無光澤</span>
+                            <span class="font-bold text-blue-600">10 分</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 二、口感 -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                        <span class="w-8 h-8 bg-gray-900 text-white rounded-lg flex items-center justify-center text-sm">2</span>
+                        二、口感 (Texture)
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3" id="group-texture">
+                        <div onclick="setScore('texture', 1, 0)" class="score-card p-4 rounded-xl bg-gray-50 flex justify-between items-center" data-val="1">
+                            <span>1. 極硬</span> <span class="font-bold text-red-500">0 分</span>
+                        </div>
+                        <div onclick="setScore('texture', 2, 10)" class="score-card p-4 rounded-xl bg-gray-50 flex justify-between items-center" data-val="2">
+                            <span>2. 偏硬</span> <span class="font-bold text-blue-600">10 分</span>
+                        </div>
+                        <div onclick="setScore('texture', 3, 20)" class="score-card p-4 rounded-xl bg-gray-50 flex justify-between items-center active" data-val="3">
+                            <span class="font-bold">3. 軟硬適中</span> <span class="font-bold text-green-600">20 分</span>
+                        </div>
+                        <div onclick="setScore('texture', 4, 10)" class="score-card p-4 rounded-xl bg-gray-50 flex justify-between items-center" data-val="4">
+                            <span>4. 偏軟爛</span> <span class="font-bold text-blue-600">10 分</span>
+                        </div>
+                        <div onclick="setScore('texture', 5, 0)" class="score-card p-4 rounded-xl bg-gray-50 flex justify-between items-center" data-val="5">
+                            <span>5. 極軟爛</span> <span class="font-bold text-red-500">0 分</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 三、氣味 -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                        <span class="w-8 h-8 bg-gray-900 text-white rounded-lg flex items-center justify-center text-sm">3</span>
+                        三、氣味 (Aroma)
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3" id="group-aroma">
+                        <div onclick="setScore('aroma', 1, 0)" class="score-card p-4 rounded-xl bg-gray-50 flex justify-between items-center" data-val="1">
+                            <span>1. 無飯香、有異味</span> <span class="font-bold text-red-500">0 分</span>
+                        </div>
+                        <div onclick="setScore('aroma', 2, 10)" class="score-card p-4 rounded-xl bg-gray-50 flex justify-between items-center" data-val="2">
+                            <span>2. 無飯香、無異味</span> <span class="font-bold text-blue-600">10 分</span>
+                        </div>
+                        <div onclick="setScore('aroma', 3, 20)" class="score-card p-4 rounded-xl bg-gray-50 flex justify-between items-center active" data-val="3">
+                            <span class="font-bold">3. 有飯香、無異味</span> <span class="font-bold text-green-600">20 分</span>
+                        </div>
+                        <div onclick="setScore('aroma', 4, 10)" class="score-card p-4 rounded-xl bg-gray-50 flex justify-between items-center" data-val="4">
+                            <span>4. 有飯香、有異味</span> <span class="font-bold text-blue-600">10 分</span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <div class="bg-yellow-50 border border-yellow-100 rounded-xl p-5 hover:shadow-md transition-shadow">
-                 <div class="flex items-center gap-3 mb-2">
-                    <span class="flex items-center justify-center w-8 h-8 rounded-full bg-yellow-100 text-yellow-700 font-bold">3</span>
-                    <h4 class="font-bold text-yellow-800">普通 (Average)</h4>
+            <!-- 右側統計區 -->
+            <div class="lg:col-span-4 space-y-6">
+                <!-- 總分卡 -->
+                <div class="bg-gray-900 text-white p-8 rounded-3xl shadow-xl overflow-hidden relative">
+                    <div class="relative z-10">
+                        <p class="text-gray-400 font-bold text-sm uppercase tracking-widest mb-2">Total Score</p>
+                        <div class="flex items-baseline gap-2">
+                            <span id="totalScore" class="text-7xl font-black">60</span>
+                            <span class="text-xl opacity-60">/ 60</span>
+                        </div>
+                        <div class="mt-6 h-2 bg-gray-800 rounded-full overflow-hidden">
+                            <div id="scoreBar" class="h-full bg-green-400 transition-all duration-500" style="width: 100%;"></div>
+                        </div>
+                    </div>
+                    <i class="fa-solid fa-bowl-rice absolute -right-4 -bottom-4 text-9xl opacity-10 rotate-12"></i>
                 </div>
-                <p class="text-sm text-yellow-800 leading-snug">品質尚可，達到基本食用標準，但沒有突出的優點或明顯的記憶點。</p>
-            </div>
 
-             <div class="bg-teal-50 border border-teal-100 rounded-xl p-5 hover:shadow-md transition-shadow">
-                 <div class="flex items-center gap-3 mb-2">
-                    <span class="flex items-center justify-center w-8 h-8 rounded-full bg-teal-100 text-teal-700 font-bold">5</span>
-                    <h4 class="font-bold text-teal-800">極佳 (Excellent)</h4>
+                <!-- 雷達圖 -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 class="font-bold text-gray-700 mb-4">感官特性雷達</h3>
+                    <div class="w-full aspect-square">
+                        <canvas id="radarChart"></canvas>
+                    </div>
                 </div>
-                <p class="text-sm text-teal-800 leading-snug">頂級品質，特性完美。例如：光澤誘人、香氣濃郁、口感絕佳。</p>
+
+                <!-- 評價內容 -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <label class="block text-sm font-bold text-gray-700 mb-3">樣品評價內容 (選填)</label>
+                    <textarea id="sampleEvaluation" rows="5" class="w-full bg-gray-50 border-none rounded-xl p-4 text-sm focus:ring-2 focus:ring-gray-400 outline-none" placeholder="請描述風味、回甘、缺陷等細節..."></textarea>
+                </div>
             </div>
-        </section>
-
-    </main>
-
-    <footer class="bg-stone-800 text-stone-400 py-6 mt-12">
-        <div class="container mx-auto px-4 text-center text-sm">
-            <p>&copy; 2025 Rice Blind Tasting Assessment System.</p>
         </div>
-    </footer>
+    </div>
 
-    <!-- Javascript Logic -->
     <script>
-        // 儲存所有活躍的 SampleComponent 實例
-        let sampleComponents = new Map();
-        let sampleCounter = 0; 
-        
-        // 評分維度
-        const scoreKeys = ['appearance', 'aroma', 'texture', 'viscosity', 'elasticity', 'taste'];
-        const scoreLabels = ['外觀', '氣味', '軟硬', '粘度', '彈力', '味道'];
-        const scoreNotes = {
-            appearance: '完整度、色澤、光澤',
-            aroma: '米飯香味、新鮮度',
-            texture: '米粒軟硬度',
-            viscosity: '米飯黏性、抱團性',
-            elasticity: '米飯彈性、咀嚼感',
-            taste: '米飯甜度、鮮味'
+        let radarChart;
+        const state = {
+            scores: { appearance: 20, texture: 20, aroma: 20 }
         };
 
-        // 輔助函數：生成單個滑桿的 HTML
-        const generateSliderHtml = (key, inputPrefix, valPrefix) => `
-            <div>
-                <div class="flex justify-between mb-1">
-                    <label class="text-sm font-medium text-stone-700">${scoreLabels[scoreKeys.indexOf(key)]} (${key.charAt(0).toUpperCase() + key.slice(1)})</label>
-                    <span class="text-sm font-bold text-teal-600" id="${valPrefix}${key}">3</span>
-                </div>
-                <input type="range" min="1" max="5" step="1" value="3" id="${inputPrefix}${key}" data-key="${key}" class="w-full h-2 bg-stone-200 rounded-lg appearance-none cursor-pointer accent-teal-600">
-                <p class="text-xs text-stone-400 mt-1">${scoreNotes[key]}</p>
-            </div>
-        `;
-
-        // 樣品組件 HTML 模板
-        const sampleTemplate = (sampleId, initialAssessor, initialDepartment) => {
-            const uniqueId = `sample-${sampleId}`; 
-            const inputPrefix = `input-${sampleId}-`;
-            const valPrefix = `val-${sampleId}-`;
-            
-            // 生成滑桿列表
-            const slidersHtml = scoreKeys.map(key => generateSliderHtml(key, inputPrefix, valPrefix)).join('');
-            
-            return `
-                <div id="${uniqueId}" class="sample-component bg-white rounded-2xl shadow-xl border border-stone-200 p-5 sm:p-6 transition-all duration-300">
-                    <!-- 標題和樣品 ID 顯示 -->
-                    <div class="flex items-center justify-between mb-6">
-                        <h3 class="text-xl font-bold text-teal-800 flex items-center gap-2">
-                            <span>&#9998;</span> 評測數據輸入
-                        </h3>
-                        <span class="text-xs font-mono bg-stone-100 text-stone-500 px-2 py-1 rounded" data-id-display>樣品編號: ${sampleId}</span>
-                    </div>
-
-                    <!-- 元數據 (Assessor, Department, ID) -->
-                    <div class="input-meta-grid mb-6">
-                        <div>
-                            <label for="${inputPrefix}assessor" class="block text-xs font-semibold text-stone-500 mb-1">評測者</label>
-                            <input type="text" id="${inputPrefix}assessor" value="${initialAssessor}" class="w-full bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-teal-500 transition-colors">
-                        </div>
-                        
-                        <div>
-                            <label for="${inputPrefix}department" class="block text-xs font-semibold text-stone-500 mb-1">部門</label>
-                            <input type="text" id="${inputPrefix}department" value="${initialDepartment}" class="w-full bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-teal-500 transition-colors">
-                        </div>
-                        
-                        <div>
-                            <label for="${inputPrefix}id" class="block text-xs font-semibold text-stone-500 mb-1">樣品編號</label>
-                            <input type="text" id="${inputPrefix}id" value="${sampleId}" class="w-full bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-sm font-bold text-teal-700 focus:outline-none focus:border-teal-500 transition-colors">
-                        </div>
-                    </div>
-
-                    <!-- 評分滑桿與雷達圖 -->
-                    <div class="sample-content-grid">
-                        <!-- Left: Sliders -->
-                        <div>
-                            <div class="space-y-5">${slidersHtml}</div>
-                        </div>
-
-                        <!-- Right: Chart -->
-                        <div class="bg-stone-50 rounded-xl p-4 border border-stone-100 flex items-center justify-center">
-                            <div class="chart-container">
-                                <canvas id="${uniqueId}-radarChart"></canvas>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 總分、評論與刪除按鈕 -->
-                    <div class="mt-8 pt-6 border-t border-stone-200 grid grid-cols-1 md:grid-cols-2 gap-6">
-                         <!-- Overall Score (現在是自動計算結果，不可編輯) -->
-                        <div>
-                            <label class="block text-sm font-bold text-stone-700 mb-2">整體分數 (總和 x 2)</label>
-                            <div class="flex items-center gap-4">
-                                <span id="${valPrefix}totalScore" class="text-2xl font-bold text-teal-700">36</span>
-                                <span class="text-stone-400">/ 60 (滿分)</span>
-                            </div>
-                        </div>
-                        <!-- Delete Button -->
-                        <div class="flex justify-end items-end">
-                            <button data-delete-id="${uniqueId}" class="delete-btn text-sm text-red-500 hover:text-red-700 transition-colors flex items-center gap-1 p-2 rounded-lg hover:bg-red-50">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 10-2 0v6a1 1 0 102 0V8z" clip-rule="evenodd" />
-                                </svg>
-                                移除此樣品
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="mt-6">
-                        <label for="${inputPrefix}comments" class="block text-sm font-bold text-stone-700 mb-2">樣品評價內容 (Comments)</label>
-                        <textarea id="${inputPrefix}comments" class="w-full h-24 bg-stone-50 border border-stone-200 rounded-lg p-3 text-sm focus:outline-none focus:border-teal-500 resize-none" placeholder="描述優缺點、特殊風味..."></textarea>
-                    </div>
-                </div>
-            `;
-        };
-
-        /**
-         * SampleComponent 類別: 管理單一樣品的所有狀態、輸入和圖表。
-         */
-        function SampleComponent(id, initialAssessor, initialDepartment) {
-            this.id = id;
-            this.uniqueId = `sample-${id}`;
-            this.inputPrefix = `input-${id}-`;
-            this.valPrefix = `val-${id}-`;
-            this.chartId = `${this.uniqueId}-radarChart`;
-            this.chartInstance = null;
-            
-            // 數據初始化 (整體分數 now defaults to 36, based on 6x3*2)
-            this.data = {
-                assessor: initialAssessor,
-                department: initialDepartment,
-                id: id,
-                scores: { appearance: 3, aroma: 3, texture: 3, viscosity: 3, elasticity: 3, taste: 3 },
-                total: 36, // 3 * 6 * 2 = 36
-                comments: ""
-            };
-            
-            // 渲染 HTML 到容器
-            this.render = () => {
-                const container = document.getElementById('samples-container');
-                const template = sampleTemplate(this.id, this.data.assessor, this.data.department);
-                container.insertAdjacentHTML('beforeend', template);
-                this.element = document.getElementById(this.uniqueId);
-            };
-            
-            // 計算整體分數 (六項分數總和 * 2)
-            this.calculateTotalScore = () => {
-                const sum = Object.values(this.data.scores).reduce((a, b) => a + b, 0);
-                this.data.total = sum * 2;
-                document.getElementById(`${this.valPrefix}totalScore`).innerText = this.data.total;
-            };
-
-            // 抓取當前表單數據並更新內部狀態
-            this.updateDataFromInputs = () => {
-                this.data.assessor = document.getElementById(`${this.inputPrefix}assessor`).value.trim();
-                this.data.department = document.getElementById(`${this.inputPrefix}department`).value.trim(); 
-                this.data.id = document.getElementById(`${this.inputPrefix}id`).value.trim();
-                this.data.comments = document.getElementById(`${this.inputPrefix}comments`).value.trim(); 
-                
-                scoreKeys.forEach(key => {
-                    const value = document.getElementById(`${this.inputPrefix}${key}`).value;
-                    // 將滑桿值強制轉為整數 (1-5)
-                    this.data.scores[key] = Math.round(parseFloat(value)); 
-                });
-                
-                // *** 重要變更：自動計算總分 ***
-                this.calculateTotalScore();
-
-                // 更新顯示的樣品 ID
-                this.element.querySelector('[data-id-display]').innerText = `樣品編號: ${this.data.id}`;
-
-                this.updateChart();
-            };
-
-            // 初始化 Chart.js
-            this.initChart = (ctx) => {
-                return new Chart(ctx, {
-                    type: 'radar',
-                    data: {
-                        labels: scoreLabels,
-                        datasets: [
-                            {
-                                label: this.data.id,
-                                data: Object.values(this.data.scores),
-                                borderColor: 'rgba(13, 148, 136, 1)', 
-                                backgroundColor: 'rgba(13, 148, 136, 0.4)',
-                                borderWidth: 2,
-                                pointBackgroundColor: '#fff',
-                                pointBorderColor: 'rgba(13, 148, 136, 1)',
-                                pointHoverBackgroundColor: '#fff',
-                                pointHoverBorderColor: 'rgba(13, 148, 136, 1)'
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            r: {
-                                min: 0,
-                                max: 5,
-                                ticks: { stepSize: 1, display: false },
-                                grid: { color: 'rgba(0, 0, 0, 0.05)' },
-                                angleLines: { color: 'rgba(0, 0, 0, 0.05)' },
-                                pointLabels: { font: { size: 12 }, color: '#44403c' }
-                            }
-                        },
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: {
-                                callbacks: {
-                                    label: (context) => `${context.label}: ${context.formattedValue}`
-                                }
-                            }
+        function initChart() {
+            const ctx = document.getElementById('radarChart').getContext('2d');
+            radarChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['外觀', '口感', '氣味'],
+                    datasets: [{
+                        label: '權重分數',
+                        data: [20, 20, 20],
+                        backgroundColor: 'rgba(31, 41, 55, 0.1)',
+                        borderColor: 'rgba(31, 41, 55, 1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: '#1f2937',
+                        pointRadius: 4
+                    }]
+                },
+                options: {
+                    scales: {
+                        r: {
+                            min: 0,
+                            max: 20,
+                            ticks: { display: false, stepSize: 5 },
+                            grid: { color: '#f3f4f6' },
+                            pointLabels: { font: { size: 14, weight: 'bold' } }
                         }
-                    }
-                });
-            };
-            
-            // 更新 Chart.js 數據
-            this.updateChart = () => {
-                if (this.chartInstance) {
-                    this.chartInstance.data.datasets[0].data = Object.values(this.data.scores);
-                    this.chartInstance.data.datasets[0].label = this.data.id;
-                    this.chartInstance.update();
+                    },
+                    plugins: { legend: { display: false } }
                 }
-            };
-            
-            // 設置所有輸入欄位的事件監聽器
-            this.setupListeners = () => {
-                // 評分滑桿和數值顯示同步
-                scoreKeys.forEach(key => {
-                    const slider = document.getElementById(`${this.inputPrefix}${key}`);
-                    const display = document.getElementById(`${this.valPrefix}${key}`);
-                    slider.addEventListener('input', (e) => {
-                        const val = Math.round(parseFloat(e.target.value)); 
-                        display.innerText = val;
-                        this.updateDataFromInputs(); // 觸發數據更新和圖表重繪
-                    });
-                });
-
-                // 其他文字輸入欄位 (總分已移除)
-                [`${this.inputPrefix}assessor`, `${this.inputPrefix}department`, `${this.inputPrefix}id`, `${this.inputPrefix}comments`].forEach(id => {
-                     document.getElementById(id).addEventListener('input', this.updateDataFromInputs);
-                });
-                
-                // 刪除按鈕
-                this.element.querySelector('.delete-btn').addEventListener('click', () => {
-                    removeSampleComponent(this.id);
-                });
-            };
-            
-            // 初始化流程
-            this.render();
-            const ctxRadar = document.getElementById(this.chartId).getContext('2d');
-            this.chartInstance = this.initChart(ctxRadar);
-            this.setupListeners();
-            // 確保初始數據和圖表同步
-            this.updateDataFromInputs(); 
+            });
         }
 
-        /**
-         * 移除一個樣品組件。
-         * @param {string} id - 樣品 ID。
-         */
-        function removeSampleComponent(id) {
-            if (sampleComponents.size === 1) {
-                // 如果只剩一個，阻止刪除並提示用戶
-                console.warn("至少需要保留一個樣品評測區塊。");
-                return;
-            }
-            const component = sampleComponents.get(id);
-            if (component) {
-                // 銷毀 Chart.js 實例以釋放內存
-                component.chartInstance.destroy();
-                // 從 DOM 中移除元素
-                component.element.remove();
-                // 從 Map 中移除組件
-                sampleComponents.delete(id);
-            }
-        }
-
-        /**
-         * 新增一個新的樣品組件。
-         */
-        function addNewSampleComponent() {
-            sampleCounter++;
-            const newId = `S-${String(sampleCounter).padStart(3, '0')}`;
-            
-            // 嘗試保留上一個樣品的評測者和部門 (如果有)
-            let lastAssessor = "評測員 A";
-            let lastDepartment = "研發部";
-
-            if (sampleComponents.size > 0) {
-                const lastComponent = Array.from(sampleComponents.values()).pop();
-                // 確保我們取得的是當前輸入的最新值
-                lastComponent.updateDataFromInputs(); 
-                lastAssessor = lastComponent.data.assessor;
-                lastDepartment = lastComponent.data.department;
-            }
-
-            const newComponent = new SampleComponent(newId, lastAssessor, lastDepartment);
-            sampleComponents.set(newId, newComponent);
-        }
-        
-        /**
-         * 匯出所有活躍樣品組件的數據為 CSV 文件。
-         */
-        function exportToCsv() {
-            if (sampleComponents.size === 0) {
-                console.error('錯誤：沒有數據可以匯出。請新增一個樣品評測區塊。');
-                return;
-            }
-
-            const submitBtnText = document.getElementById('submitBtnText');
-            const originalText = submitBtnText.innerText;
-            submitBtnText.innerText = '正在準備...';
-            
-            // 1. 確保所有組件都更新了內部數據
-            const allData = Array.from(sampleComponents.values()).map(comp => {
-                comp.updateDataFromInputs(); // 確保從輸入欄位抓取最新值
-                return comp.data;
+        function setScore(category, val, weightedScore) {
+            // UI 切換
+            const group = document.getElementById(`group-${category}`);
+            group.querySelectorAll('.score-card').forEach(card => {
+                card.classList.remove('active', 'ring-2', 'ring-gray-800');
+                if (parseInt(card.getAttribute('data-val')) === val) {
+                    card.classList.add('active');
+                }
             });
 
-            // 2. 定義 CSV 標頭
-            const headers = [
-                "評測者", "部門", "樣品編號", ...scoreLabels, "整體分數 (總分x2)", "樣品評價內容"
+            // 更新數據
+            state.scores[category] = weightedScore;
+            
+            // 更新總分
+            const total = state.scores.appearance + state.scores.texture + state.scores.aroma;
+            document.getElementById('totalScore').innerText = total;
+            
+            // 更新進度條顏色
+            const bar = document.getElementById('scoreBar');
+            bar.style.width = (total / 60 * 100) + '%';
+            if (total >= 50) bar.className = 'h-full bg-green-400 transition-all';
+            else if (total >= 30) bar.className = 'h-full bg-yellow-400 transition-all';
+            else bar.className = 'h-full bg-red-400 transition-all';
+
+            // 更新圖表
+            radarChart.data.datasets[0].data = [state.scores.appearance, state.scores.texture, state.scores.aroma];
+            radarChart.update();
+        }
+
+        function resetForm() {
+            if(!confirm('確定要清空數據嗎？')) return;
+            document.getElementById('assessor').value = '';
+            document.getElementById('sampleId').value = '';
+            document.getElementById('sampleEvaluation').value = '';
+            setScore('appearance', 3, 20);
+            setScore('texture', 3, 20);
+            setScore('aroma', 3, 20);
+        }
+
+        function exportCSV() {
+            const assessor = document.getElementById('assessor').value || "未填寫";
+            const sampleId = document.getElementById('sampleId').value || "未註明";
+            const total = state.scores.appearance + state.scores.texture + state.scores.aroma;
+            const evalText = document.getElementById('sampleEvaluation').value.replace(/\n/g, " ").replace(/,/g, "，");
+
+            // 嚴格遵守格式：評測者, 樣品編號, 外觀, 口感, 氣味, 整體分數, 樣品評價內容(選填)
+            const headers = ["評測者", "樣品編號", "外觀", "口感", "氣味", "整體分數", "樣品評價內容(選填)"];
+            const dataRow = [
+                assessor,
+                sampleId,
+                state.scores.appearance,
+                state.scores.texture,
+                state.scores.aroma,
+                total,
+                evalText
             ];
-            
-            // 3. 準備數據行 (多行)
-            const csvRows = allData.map(data => {
-                // 處理評論中的逗號和換行符
-                const commentsCsvSafe = `"${(data.comments || '').replace(/"/g, '""').replace(/\n/g, ' ') }"`;
-                
-                return [
-                    data.assessor,
-                    data.department, 
-                    data.id,
-                    data.scores.appearance,
-                    data.scores.aroma,
-                    data.scores.texture,
-                    data.scores.viscosity,
-                    data.scores.elasticity,
-                    data.scores.taste,
-                    // 這裡使用自動計算的總分 (已在 updateDataFromInputs 中計算)
-                    data.total, 
-                    commentsCsvSafe
-                ].join(',');
-            });
-            
-            // 4. 組合 CSV 內容
-            const csvContent = headers.join(',') + '\n' + csvRows.join('\n');
-            
-            // 5. 創建 Blob 並下載
-            const blob = new Blob(['\ufeff', csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            
-            const a = document.createElement('a');
-            a.setAttribute('href', url);
-            
-            const timestamp = new Date().toISOString().slice(0, 10).replace(/-/g, ''); 
-            const filename = `Rice_Evaluations_Batch_${timestamp}_${sampleComponents.size}samples.csv`;
-            a.setAttribute('download', filename);
-            
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
 
-            // 提供視覺反饋
-            submitBtnText.innerText = '下載完成! 💾';
-            setTimeout(() => { 
-                submitBtnText.innerText = originalText; 
-            }, 2000);
+            const csvContent = "\uFEFF" + [headers, dataRow].map(r => r.map(c => `"${c}"`).join(",")).join("\n");
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `池上飯評測_${sampleId}_${new Date().getTime()}.csv`;
+            link.click();
         }
 
-        // --- Init ---
-        window.addEventListener('DOMContentLoaded', () => {
-            // 1. 初始化第一個樣品
-            addNewSampleComponent(); 
-
-            // 2. 設置按鈕監聽器
-            document.getElementById('addNewSampleBtn').addEventListener('click', addNewSampleComponent);
-            document.getElementById('submitBtn').addEventListener('click', exportToCsv);
-            
-            // 由於採用多組件模式，重置按鈕功能已移除 (由單個樣品的刪除按鈕取代，或由使用者手動重設值)
-            const resetBtn = document.getElementById('resetBtn');
-            if (resetBtn) resetBtn.remove();
-        });
-
+        window.onload = initChart;
     </script>
 </body>
 </html>
