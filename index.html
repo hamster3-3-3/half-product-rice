@@ -14,6 +14,7 @@
         .tab-btn { transition: all 0.3s; }
         .tab-btn.active { background-color: #1f2937; color: white; border-color: #1f2937; }
         .hidden-tab { display: none; }
+        select { -webkit-appearance: none; -moz-appearance: none; appearance: none; }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -39,214 +40,196 @@
                 <label class="block text-xs font-bold text-gray-400 uppercase mb-1">評測者 Assessor</label>
                 <input type="text" id="globalAssessor" class="w-full bg-gray-50 border-none rounded-xl p-3 focus:ring-2 focus:ring-gray-400 outline-none font-bold" placeholder="輸入評測人員姓名">
             </div>
-            <p class="text-gray-400 text-sm hidden md:block">請在下方分頁中分別進行評分。填寫時不會顯示分數。</p>
+            <p class="text-gray-400 text-sm hidden md:block">切換 A/B 樣品時系統會自動保留您的選擇與筆記。</p>
         </div>
 
         <!-- Tab Bar -->
         <div id="tabContainer" class="flex flex-wrap gap-2 mb-6">
-            <!-- 樣品標籤會顯示在這裡 -->
+            <!-- 樣品類別分頁標籤 -->
         </div>
 
         <!-- Form Container -->
         <div id="formContainer">
-            <!-- Sample Forms injected here -->
+            <!-- 動態生成的表單內容 -->
         </div>
     </div>
 
     <script>
-        let samples = []; 
-        let currentActiveIdx = 0;
+        let categories = ["肉鬆", "湖鹽飯"];
+        let dataStore = {}; 
+        let currentCategoryIdx = 0;
 
-        // 預設樣品配置
-        const defaultConfigs = [
-            { name: "肉鬆鹽飯", code: "MB-01" },
-            { name: "肉鬆鹽飯", code: "MB-02" },
-            { name: "湖鹽飯", code: "RB-01" },
-            { name: "湖鹽飯", code: "RB-02" }
-        ];
-
-        function createSampleData(name, code, idx) {
-            const id = 'sample-' + Date.now() + '-' + Math.floor(Math.random() * 1000) + '-' + idx;
-            return {
-                id: id,
-                label: name,
-                sampleId: code,
-                scores: { appearance: 30, texture: 40, aroma: 30 }, // 預設滿分，由使用者點選後更新
-                evaluation: "",
-            };
+        // 初始化資料儲存器
+        function initDataStore() {
+            categories.forEach(cat => {
+                dataStore[cat] = {
+                    currentSelection: "A", 
+                    A: { scores: { appearance: 30, texture: 40, aroma: 30 }, evaluation: "", valIdx: { appearance: 3, texture: 3, aroma: 3 } },
+                    B: { scores: { appearance: 30, texture: 40, aroma: 30 }, evaluation: "", valIdx: { appearance: 3, texture: 3, aroma: 3 } }
+                };
+            });
         }
 
         function init() {
-            defaultConfigs.forEach((cfg, i) => {
-                samples.push(createSampleData(cfg.name, cfg.code, i));
-            });
-            
+            initDataStore();
             renderTabs();
-            renderForms();
-            switchTab(0);
-        }
-
-        function switchTab(idx) {
-            currentActiveIdx = idx;
-            document.querySelectorAll('.tab-btn').forEach((btn, i) => {
-                if(i === idx) {
-                    btn.classList.add('active');
-                    btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-                }
-                else btn.classList.remove('active');
-            });
-            document.querySelectorAll('.sample-form').forEach((form) => {
-                if(form.id === `form-${samples[idx].id}`) form.classList.remove('hidden-tab');
-                else form.classList.add('hidden-tab');
-            });
+            renderCurrentForm();
         }
 
         function renderTabs() {
             const container = document.getElementById('tabContainer');
-            container.innerHTML = samples.map((s, i) => `
-                <button onclick="switchTab(${i})" class="tab-btn px-8 py-2 rounded-full border-2 border-gray-200 font-bold text-gray-500 hover:border-gray-400">
-                    ${s.label}
+            container.innerHTML = categories.map((cat, i) => `
+                <button onclick="switchCategory(${i})" class="tab-btn px-10 py-3 rounded-full border-2 border-gray-200 font-bold text-gray-500 hover:border-gray-400 ${i === currentCategoryIdx ? 'active' : ''}">
+                    ${cat}
                 </button>
             `).join('');
         }
 
-        function renderForms() {
-            const container = document.getElementById('formContainer');
-            samples.forEach((sample, i) => {
-                if (document.getElementById(`form-${sample.id}`)) return;
-
-                const formHtml = `
-                    <div id="form-${sample.id}" class="sample-form space-y-6 hidden-tab">
-                        <!-- 資訊區 -->
-                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row gap-4">
-                            <div class="flex-1">
-                                <label class="text-xs font-bold text-gray-400 uppercase block mb-1">樣品名稱</label>
-                                <div class="text-xl font-bold text-gray-800 p-1">${sample.label}</div>
-                            </div>
-                            <div class="w-full md:w-48">
-                                <label class="text-xs font-bold text-gray-400 uppercase block mb-1">樣品編號</label>
-                                <div class="bg-gray-100 rounded-xl p-3 text-center font-mono font-bold text-gray-900">${sample.sampleId}</div>
-                            </div>
-                        </div>
-
-                        <!-- 評分區 -->
-                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                            <h2 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                <span class="w-6 h-6 bg-gray-900 text-white rounded flex items-center justify-center text-xs">1</span>
-                                一、外觀 (Appearance)
-                            </h2>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                ${renderScoreCard(i, 'appearance', 1, 0, '1. 飯粒不完整、光澤不均勻')}
-                                ${renderScoreCard(i, 'appearance', 2, 10, '2. 飯粒不完整、光澤均勻')}
-                                ${renderScoreCard(i, 'appearance', 3, 30, '3. 飯粒完整、光澤均勻', true)}
-                                ${renderScoreCard(i, 'appearance', 4, 20, '4. 飯粒完整、光澤不均勻')}
-                            </div>
-                        </div>
-
-                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                            <h2 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                <span class="w-6 h-6 bg-gray-900 text-white rounded flex items-center justify-center text-xs">2</span>
-                                二、口感 (Texture)
-                            </h2>
-                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                ${renderScoreCard(i, 'texture', 1, 0, '1. 極硬')}
-                                ${renderScoreCard(i, 'texture', 2, 20, '2. 偏硬')}
-                                ${renderScoreCard(i, 'texture', 3, 40, '3. 軟硬適中', true)}
-                                ${renderScoreCard(i, 'texture', 4, 20, '4. 偏軟爛')}
-                                ${renderScoreCard(i, 'texture', 5, 0, '5. 極軟爛')}
-                            </div>
-                        </div>
-
-                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                            <h2 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                <span class="w-6 h-6 bg-gray-900 text-white rounded flex items-center justify-center text-xs">3</span>
-                                三、氣味 (Aroma)
-                            </h2>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                ${renderScoreCard(i, 'aroma', 1, 0, '1. 無飯香、有異味')}
-                                ${renderScoreCard(i, 'aroma', 2, 15, '2. 無飯香、無異味')}
-                                ${renderScoreCard(i, 'aroma', 3, 30, '3. 有飯香、無異味', true)}
-                                ${renderScoreCard(i, 'aroma', 4, 10, '4. 有飯香、有異味')}
-                            </div>
-                        </div>
-
-                        <!-- 評價區 -->
-                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                            <label class="block text-sm font-bold text-gray-700 mb-3">評測筆記 (Flavor Notes)</label>
-                            <textarea oninput="updateSampleInfo(${i}, 'evaluation', this.value)" rows="4" class="w-full bg-gray-50 border-none rounded-xl p-4 text-sm focus:ring-2 focus:ring-gray-400 outline-none" placeholder="描述此樣品的風味特徵..."></textarea>
-                        </div>
-                    </div>
-                `;
-                container.insertAdjacentHTML('beforeend', formHtml);
-            });
+        function switchCategory(idx) {
+            currentCategoryIdx = idx;
+            renderTabs();
+            renderCurrentForm();
         }
 
-        function renderScoreCard(sampleIdx, category, val, score, text, isActive = false) {
+        function toggleSampleVersion(catName, version) {
+            dataStore[catName].currentSelection = version;
+            renderCurrentForm();
+        }
+
+        function renderCurrentForm() {
+            const catName = categories[currentCategoryIdx];
+            const currentVersion = dataStore[catName].currentSelection;
+            const currentData = dataStore[catName][currentVersion];
+            const container = document.getElementById('formContainer');
+
+            container.innerHTML = `
+                <div class="sample-form space-y-6">
+                    <!-- 資訊區 -->
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row gap-4">
+                        <div class="flex-1">
+                            <label class="text-xs font-bold text-gray-400 uppercase block mb-1">樣品類別</label>
+                            <div class="text-2xl font-black text-gray-900 p-1">${catName}</div>
+                        </div>
+                        <div class="w-full md:w-64">
+                            <label class="text-xs font-bold text-gray-400 uppercase block mb-1">樣品編號</label>
+                            <div class="relative">
+                                <select onchange="toggleSampleVersion('${catName}', this.value)" 
+                                        class="w-full bg-gray-100 border-2 border-transparent focus:border-gray-900 rounded-xl p-3 font-mono font-bold text-gray-900 outline-none cursor-pointer">
+                                    <option value="A" ${currentVersion === 'A' ? 'selected' : ''}>A</option>
+                                    <option value="B" ${currentVersion === 'B' ? 'selected' : ''}>B</option>
+                                </select>
+                                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-700">▼</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 評分區 (外觀) -->
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                        <h2 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                            <span class="w-6 h-6 bg-gray-900 text-white rounded flex items-center justify-center text-xs">1</span>
+                            一、外觀 (Appearance)
+                        </h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            ${renderScoreCard(catName, 'appearance', 1, 0, '1. 飯粒不完整、光澤不均勻', currentData.valIdx.appearance === 1)}
+                            ${renderScoreCard(catName, 'appearance', 2, 10, '2. 飯粒不完整、光澤均勻', currentData.valIdx.appearance === 2)}
+                            ${renderScoreCard(catName, 'appearance', 3, 30, '3. 飯粒完整、光澤均勻', currentData.valIdx.appearance === 3)}
+                            ${renderScoreCard(catName, 'appearance', 4, 20, '4. 飯粒完整、光澤不均勻', currentData.valIdx.appearance === 4)}
+                        </div>
+                    </div>
+
+                    <!-- 評分區 (口感) -->
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                        <h2 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                            <span class="w-6 h-6 bg-gray-900 text-white rounded flex items-center justify-center text-xs">2</span>
+                            二、口感 (Texture)
+                        </h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                            ${renderScoreCard(catName, 'texture', 1, 0, '1. 極硬', currentData.valIdx.texture === 1)}
+                            ${renderScoreCard(catName, 'texture', 2, 20, '2. 偏硬', currentData.valIdx.texture === 2)}
+                            ${renderScoreCard(catName, 'texture', 3, 40, '3. 軟硬適中', currentData.valIdx.texture === 3)}
+                            ${renderScoreCard(catName, 'texture', 4, 20, '4. 偏軟爛', currentData.valIdx.texture === 4)}
+                            ${renderScoreCard(catName, 'texture', 5, 0, '5. 極軟爛', currentData.valIdx.texture === 5)}
+                        </div>
+                    </div>
+
+                    <!-- 評分區 (氣味) -->
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                        <h2 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                            <span class="w-6 h-6 bg-gray-900 text-white rounded flex items-center justify-center text-xs">3</span>
+                            三、氣味 (Aroma)
+                        </h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            ${renderScoreCard(catName, 'aroma', 1, 0, '1. 無飯香、有異味', currentData.valIdx.aroma === 1)}
+                            ${renderScoreCard(catName, 'aroma', 2, 15, '2. 無飯香、無異味', currentData.valIdx.aroma === 2)}
+                            ${renderScoreCard(catName, 'aroma', 3, 30, '3. 有飯香、無異味', currentData.valIdx.aroma === 3)}
+                            ${renderScoreCard(catName, 'aroma', 4, 10, '4. 有飯香、有異味', currentData.valIdx.aroma === 4)}
+                        </div>
+                    </div>
+
+                    <!-- 評價區 -->
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                        <label class="block text-sm font-bold text-gray-700 mb-3">評測筆記 (Flavor Notes)</label>
+                        <textarea oninput="updateEvaluation('${catName}', this.value)" rows="4" class="w-full bg-gray-50 border-none rounded-xl p-4 text-sm focus:ring-2 focus:ring-gray-400 outline-none" placeholder="描述此樣品的風味特徵...">${currentData.evaluation}</textarea>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderScoreCard(catName, category, val, score, text, isActive) {
             const activeClass = isActive ? 'active' : '';
             const fontClass = isActive ? 'font-bold text-gray-900' : 'text-gray-700 font-medium';
             return `
-                <div onclick="setScore(${sampleIdx}, '${category}', ${val}, ${score}, this)" 
-                     class="score-card p-4 rounded-xl bg-gray-50 flex justify-between items-center ${activeClass}" 
-                     data-val="${val}">
+                <div onclick="updateScore('${catName}', '${category}', ${val}, ${score})" 
+                     class="score-card p-4 rounded-xl bg-gray-50 flex justify-between items-center ${activeClass}">
                     <span class="${fontClass}">${text}</span>
                 </div>
             `;
         }
 
-        function setScore(sampleIdx, category, val, weightedScore, element) {
-            const sample = samples[sampleIdx];
-            const parent = element.parentElement;
-            parent.querySelectorAll('.score-card').forEach(card => {
-                card.classList.remove('active');
-                const span = card.querySelector('span');
-                span.classList.remove('font-bold', 'text-gray-900');
-                span.classList.add('text-gray-700', 'font-medium');
-            });
-
-            element.classList.add('active');
-            const targetSpan = element.querySelector('span');
-            targetSpan.classList.add('font-bold', 'text-gray-900');
-            targetSpan.classList.remove('text-gray-700', 'font-medium');
-
-            // 雖然畫面上看不到，但後台數據會更新，以便匯出報表
-            sample.scores[category] = weightedScore;
+        function updateScore(catName, scoreCat, val, weightedScore) {
+            const version = dataStore[catName].currentSelection;
+            dataStore[catName][version].valIdx[scoreCat] = val;
+            dataStore[catName][version].scores[scoreCat] = weightedScore;
+            renderCurrentForm(); 
         }
 
-        function updateSampleInfo(idx, field, value) {
-            samples[idx][field] = value;
+        function updateEvaluation(catName, value) {
+            const version = dataStore[catName].currentSelection;
+            dataStore[catName][version].evaluation = value;
         }
 
         function resetAll() {
             if(!confirm('這將清除所有已選數據，確定嗎？')) return;
-            samples = [];
-            document.getElementById('formContainer').innerHTML = '';
-            document.getElementById('globalAssessor').value = '';
-            init();
+            location.reload();
         }
 
         function exportCSV() {
             const assessor = document.getElementById('globalAssessor').value || "未填寫";
-            const headers = ["樣品名稱", "評測者", "樣品編號", "外觀得分", "口感得分", "氣味得分", "總分", "評價內容"];
+            const headers = ["樣品類別", "評測者", "樣品代號", "外觀得分", "口感得分", "氣味得分", "總計得分", "評測筆記"];
             
-            const rows = samples.map(s => {
-                const total = s.scores.appearance + s.scores.texture + s.scores.aroma;
-                return [
-                    s.label,
-                    assessor,
-                    s.sampleId || "未註明",
-                    s.scores.appearance,
-                    s.scores.texture,
-                    s.scores.aroma,
-                    total,
-                    (s.evaluation || "").replace(/\n/g, " ").replace(/,/g, "，")
-                ];
+            let rows = [];
+            categories.forEach(cat => {
+                ["A", "B"].forEach(ver => {
+                    const d = dataStore[cat][ver];
+                    const total = d.scores.appearance + d.scores.texture + d.scores.aroma;
+                    rows.push([
+                        cat,
+                        assessor,
+                        ver,
+                        d.scores.appearance,
+                        d.scores.texture,
+                        d.scores.aroma,
+                        total,
+                        (d.evaluation || "").replace(/\n/g, " ").replace(/,/g, "，")
+                    ]);
+                });
             });
 
             const csvContent = "\uFEFF" + [headers, ...rows].map(r => r.map(c => `"${c}"`).join(",")).join("\n");
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
-            link.download = `米飯盲測隱藏評分報表_${new Date().toISOString().slice(0,10)}.csv`;
+            link.download = `米飯盲測全數據報表_${new Date().toISOString().slice(0,10)}.csv`;
             link.click();
         }
 
