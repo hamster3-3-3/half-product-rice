@@ -15,7 +15,6 @@
         .score-card:hover { transform: translateY(-1px); background-color: #ffffff; }
         .tab-btn { transition: all 0.3s; }
         .tab-btn.active { background-color: #1f2937; color: white; border-color: #1f2937; }
-        .hidden-tab { display: none; }
         select { -webkit-appearance: none; -moz-appearance: none; appearance: none; }
     </style>
 </head>
@@ -27,7 +26,6 @@
                 <h1 class="text-3xl font-black text-gray-900 tracking-tight">半成品(米飯)盲測評分系統</h1>
             </div>
             <div class="mt-4 md:mt-0 flex flex-wrap justify-center gap-3">
-                <!-- ✅ 按鈕名稱已由「匯出 CSV 報表」改為「提交表單」 -->
                 <button onclick="exportCSV()" class="bg-gray-900 text-white px-6 py-3 rounded-xl font-bold hover:bg-gray-800 transition shadow-lg flex items-center gap-2">
                     提交表單
                 </button>
@@ -46,12 +44,8 @@
             <p class="text-gray-400 text-sm hidden md:block">切換 A/B 樣品時系統會自動保留您的選擇與筆記。</p>
         </div>
 
-        <!-- Tab Bar -->
-        <div id="tabContainer" class="flex flex-wrap gap-2 mb-6">
-            <!-- 預設靜態內容（避免某些預覽環境禁用 JS 時畫面空白） -->
-            <button class="tab-btn active px-10 py-3 rounded-full border-2 border-gray-200 font-bold text-gray-500 hover:border-gray-400">肉鬆</button>
-            <button class="tab-btn px-10 py-3 rounded-full border-2 border-gray-200 font-bold text-gray-500 hover:border-gray-400">湖鹽飯</button>
-        </div>
+        <!-- Tab Bar（已簡化為單一類別「飯糰」，因此不顯示 Tab） -->
+        <div id="tabContainer" class="hidden"></div>
 
         <!-- Form Container -->
         <div id="formContainer">
@@ -60,7 +54,7 @@
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row gap-4">
                     <div class="flex-1">
                         <label class="text-xs font-bold text-gray-400 uppercase block mb-1">樣品類別</label>
-                        <div class="text-2xl font-black text-gray-900 p-1">肉鬆</div>
+                        <div class="text-2xl font-black text-gray-900 p-1">飯糰</div>
                     </div>
                     <div class="w-full md:w-64">
                         <label class="text-xs font-bold text-gray-400 uppercase block mb-1">樣品編號</label>
@@ -74,51 +68,6 @@
                         <p class="mt-2 text-xs text-gray-400">（若預覽環境禁用 JS，互動功能將無法使用，但版面仍可預覽）</p>
                     </div>
                 </div>
-
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                    <h2 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                        <span class="w-6 h-6 bg-gray-900 text-white rounded flex items-center justify-center text-xs">1</span>
-                        一、外觀 (Appearance)
-                    </h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div class="score-card p-4 rounded-xl bg-gray-50 flex justify-between items-center"><span class="text-gray-700 font-medium">1. 飯粒不完整、光澤不均勻</span></div>
-                        <div class="score-card p-4 rounded-xl bg-gray-50 flex justify-between items-center"><span class="text-gray-700 font-medium">2. 飯粒不完整、光澤均勻</span></div>
-                        <div class="score-card active p-4 rounded-xl bg-gray-50 flex justify-between items-center"><span class="font-bold text-gray-900">3. 飯粒完整、光澤均勻</span></div>
-                        <div class="score-card p-4 rounded-xl bg-gray-50 flex justify-between items-center"><span class="text-gray-700 font-medium">4. 飯粒完整、光澤不均勻</span></div>
-                    </div>
-                </div>
-
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                    <h2 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                        <span class="w-6 h-6 bg-gray-900 text-white rounded flex items-center justify-center text-xs">2</span>
-                        二、口感 (Texture)
-                    </h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                        <div class="score-card p-4 rounded-xl bg-gray-50 flex justify-between items-center"><span class="text-gray-700 font-medium">1. 極硬</span></div>
-                        <div class="score-card p-4 rounded-xl bg-gray-50 flex justify-between items-center"><span class="text-gray-700 font-medium">2. 偏硬</span></div>
-                        <div class="score-card active p-4 rounded-xl bg-gray-50 flex justify-between items-center"><span class="font-bold text-gray-900">3. 軟硬適中</span></div>
-                        <div class="score-card p-4 rounded-xl bg-gray-50 flex justify-between items-center"><span class="text-gray-700 font-medium">4. 偏軟爛</span></div>
-                        <div class="score-card p-4 rounded-xl bg-gray-50 flex justify-between items-center"><span class="text-gray-700 font-medium">5. 極軟爛</span></div>
-                    </div>
-                </div>
-
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                    <h2 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                        <span class="w-6 h-6 bg-gray-900 text-white rounded flex items-center justify-center text-xs">3</span>
-                        三、氣味 (Aroma)
-                    </h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div class="score-card p-4 rounded-xl bg-gray-50 flex justify-between items-center"><span class="text-gray-700 font-medium">1. 無飯香、有異味</span></div>
-                        <div class="score-card p-4 rounded-xl bg-gray-50 flex justify-between items-center"><span class="text-gray-700 font-medium">2. 無飯香、無異味</span></div>
-                        <div class="score-card active p-4 rounded-xl bg-gray-50 flex justify-between items-center"><span class="font-bold text-gray-900">3. 有飯香、無異味</span></div>
-                        <div class="score-card p-4 rounded-xl bg-gray-50 flex justify-between items-center"><span class="text-gray-700 font-medium">4. 有飯香、有異味</span></div>
-                    </div>
-                </div>
-
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                    <label class="block text-sm font-bold text-gray-700 mb-3">評測筆記 (Flavor Notes)</label>
-                    <textarea rows="4" class="w-full bg-gray-50 border-none rounded-xl p-4 text-sm" placeholder="描述此樣品的風味特徵..." disabled></textarea>
-                </div>
             </div>
         </div>
 
@@ -128,19 +77,17 @@
 
     <script>
         /**
-         * 功能：按下「提交表單」時：
+         * 按下「提交表單」時：
          *  - 透過 Google Apps Script Web App 上傳到 Google Drive
-         *
-         * 注意：純 HTML 無法直接寫入你的 Google Drive；必須透過 Apps Script Web App（或 Drive API OAuth）。
          */
         const DRIVE_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbw-RUOruPvni0M37kDhtulr99Q4YwD-Sm9Jp9vNZfrHtfedQL2puekcX9bDSOpU9TWH/exec";
         const UPLOAD_TOKEN = "rice_test_2025";
 
-        let categories = ["肉鬆", "湖鹽飯"];
+        // ✅ 類別已改為單一「飯糰」
+        let categories = ["飯糰"];
         let dataStore = {};
         let currentCategoryIdx = 0;
 
-        // 初始化資料儲存器
         function initDataStore() {
             categories.forEach(cat => {
                 dataStore[cat] = {
@@ -154,7 +101,7 @@
         function init() {
             try {
                 initDataStore();
-                renderTabs();
+                // 單一類別，不需要 tabs
                 renderCurrentForm();
                 runTests();
             } catch (e) {
@@ -164,28 +111,13 @@
             }
         }
 
-        function renderTabs() {
-            const container = document.getElementById('tabContainer');
-            container.innerHTML = categories.map((cat, i) => `
-                <button onclick="switchCategory(${i})" class="tab-btn px-10 py-3 rounded-full border-2 border-gray-200 font-bold text-gray-500 hover:border-gray-400 ${i === currentCategoryIdx ? 'active' : ''}">
-                    ${cat}
-                </button>
-            `).join('');
-        }
-
-        function switchCategory(idx) {
-            currentCategoryIdx = idx;
-            renderTabs();
-            renderCurrentForm();
-        }
-
         function toggleSampleVersion(catName, version) {
             dataStore[catName].currentSelection = version;
             renderCurrentForm();
         }
 
         function renderCurrentForm() {
-            const catName = categories[currentCategoryIdx];
+            const catName = categories[currentCategoryIdx]; // 永遠是「飯糰」
             const currentVersion = dataStore[catName].currentSelection;
             const currentData = dataStore[catName][currentVersion];
             const container = document.getElementById('formContainer');
@@ -201,6 +133,7 @@
                         <div class="w-full md:w-64">
                             <label class="text-xs font-bold text-gray-400 uppercase block mb-1">樣品編號</label>
                             <div class="relative">
+                                <!-- ✅ 樣品編號 A/B 下拉可選 -->
                                 <select onchange="toggleSampleVersion('${catName}', this.value)" 
                                         class="w-full bg-gray-100 border-2 border-transparent focus:border-gray-900 rounded-xl p-3 font-mono font-bold text-gray-900 outline-none cursor-pointer">
                                     <option value="A" ${currentVersion === 'A' ? 'selected' : ''}>A</option>
@@ -297,7 +230,6 @@
                 .replace(/,/g, '，');
         }
 
-        // 仍沿用原本函式名稱 exportCSV（只是按鈕顯示文字改為「提交表單」）
         function exportCSV() {
             const assessor = document.getElementById('globalAssessor').value || '未填寫';
             const headers = ['樣品類別', '評測者', '樣品代號', '外觀得分', '口感得分', '氣味得分', '總計得分', '評測筆記'];
@@ -327,8 +259,6 @@
             const csvContent = BOM + csvBody;
 
             const filename = `米飯盲測全數據報表_${new Date().toISOString().slice(0,10)}.csv`;
-
-            // 僅上傳到 Google Drive，不進行本地下載
             uploadCSVToDrive({ csvContent, filename, assessor });
         }
 
