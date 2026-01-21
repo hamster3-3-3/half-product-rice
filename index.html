@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>半成品(米飯)盲測評分系統</title>
+    <title>壽司飯盲測評分系統</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap');
@@ -23,7 +23,7 @@
         <!-- Header -->
         <div class="flex flex-col md:flex-row justify-between items-center mb-6 border-b-2 border-gray-800 pb-6">
             <div class="text-center md:text-left">
-                <h1 class="text-3xl font-black text-gray-900 tracking-tight">半成品(米飯)盲測評分系統</h1>
+                <h1 class="text-3xl font-black text-gray-900 tracking-tight">壽司飯盲測評分系統</h1>
             </div>
             <div class="mt-4 md:mt-0 flex flex-wrap justify-center gap-3">
                 <button onclick="exportCSV()" class="bg-gray-900 text-white px-6 py-3 rounded-xl font-bold hover:bg-gray-800 transition shadow-lg flex items-center gap-2">
@@ -64,7 +64,7 @@
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row gap-4">
                     <div class="flex-1">
                         <label class="text-xs font-bold text-gray-400 uppercase block mb-1">樣品類別</label>
-                        <div class="text-2xl font-black text-gray-900 p-1">飯糰</div>
+                        <div class="text-2xl font-black text-gray-900 p-1">壽司飯</div>
                     </div>
                     <div class="w-full md:w-64">
                         <label class="text-xs font-bold text-gray-400 uppercase block mb-1">樣品編號</label>
@@ -94,7 +94,7 @@
         const UPLOAD_TOKEN = "rice_test_2025";
 
         // ✅ 類別已改為單一「飯糰」
-        let categories = ["飯糰"];
+        let categories = ["壽司飯"];
         let dataStore = {};
         let currentCategoryIdx = 0;
 
@@ -102,8 +102,8 @@
             categories.forEach(cat => {
                 dataStore[cat] = {
                     currentSelection: "A",
-                    A: { scores: { appearance: 30, texture: 40, aroma: 30 }, evaluation: "", valIdx: { appearance: 3, texture: 3, aroma: 3 } },
-                    B: { scores: { appearance: 30, texture: 40, aroma: 30 }, evaluation: "", valIdx: { appearance: 3, texture: 3, aroma: 3 } }
+                    A: { scores: { appearance: 40, texture: 40, aging: 20 }, evaluation: "", valIdx: { appearance: 3, texture: 3, aging: 1 } },
+                    B: { scores: { appearance: 40, texture: 40, aging: 20 }, evaluation: "", valIdx: { appearance: 3, texture: 3, aging: 1 } }
                 };
             });
         }
@@ -170,9 +170,9 @@
                             一、外觀 (Appearance)
                         </h2>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            ${renderScoreCard(catName, 'appearance', 1, 0, '1. 飯粒不完整、光澤不均勻', currentData.valIdx.appearance === 1)}
-                            ${renderScoreCard(catName, 'appearance', 2, 10, '2. 飯粒不完整、光澤均勻', currentData.valIdx.appearance === 2)}
-                            ${renderScoreCard(catName, 'appearance', 3, 30, '3. 飯粒完整、光澤均勻', currentData.valIdx.appearance === 3)}
+                            ${renderScoreCard(catName, 'appearance', 1, 0,  '1. 飯粒不完整、光澤不均勻', currentData.valIdx.appearance === 1)}
+                            ${renderScoreCard(catName, 'appearance', 2, 20, '2. 飯粒不完整、光澤均勻', currentData.valIdx.appearance === 2)}
+                            ${renderScoreCard(catName, 'appearance', 3, 40, '3. 飯粒完整、光澤均勻', currentData.valIdx.appearance === 3)}
                             ${renderScoreCard(catName, 'appearance', 4, 20, '4. 飯粒完整、光澤不均勻', currentData.valIdx.appearance === 4)}
                         </div>
                     </div>
@@ -192,21 +192,23 @@
                         </div>
                     </div>
 
-                    <!-- 評分區 (氣味) -->
+                    
+                    <!-- 評分區 (老化程度) -->
                     <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                         <h2 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
                             <span class="w-6 h-6 bg-gray-900 text-white rounded flex items-center justify-center text-xs">3</span>
-                            三、氣味 (Aroma)
+                            三、老化程度 (Aging)
                         </h2>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            ${renderScoreCard(catName, 'aroma', 1, 0, '1. 無飯香、有異味', currentData.valIdx.aroma === 1)}
-                            ${renderScoreCard(catName, 'aroma', 2, 15, '2. 無飯香、無異味', currentData.valIdx.aroma === 2)}
-                            ${renderScoreCard(catName, 'aroma', 3, 30, '3. 有飯香、無異味', currentData.valIdx.aroma === 3)}
-                            ${renderScoreCard(catName, 'aroma', 4, 10, '4. 有飯香、有異味', currentData.valIdx.aroma === 4)}
+                            ${renderScoreCard(catName, 'aging', 1, 20, '1. 完全無老化口感', currentData.valIdx.aging === 1)}
+                            ${renderScoreCard(catName, 'aging', 2, 10, '2. 些許老化', currentData.valIdx.aging === 2)}
+                            ${renderScoreCard(catName, 'aging', 3, 5,  '3. 大部分老化', currentData.valIdx.aging === 3)}
+                            ${renderScoreCard(catName, 'aging', 4, 0,  '4. 完全老化', currentData.valIdx.aging === 4)}
                         </div>
                     </div>
 
                     <!-- 評價區 -->
+
                     <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                         <label class="block text-sm font-bold text-gray-700 mb-3">評測筆記 (Flavor Notes)</label>
                         <textarea oninput="updateEvaluation('${catName}', this.value)" rows="4" class="w-full bg-gray-50 border-none rounded-xl p-4 text-sm focus:ring-2 focus:ring-gray-400 outline-none" placeholder="描述此樣品的風味特徵...">${currentData.evaluation}</textarea>
@@ -285,20 +287,20 @@
             const assessor = validateAssessorOrBlock();
             if (!assessor) return;
 
-            const headers = ['樣品類別', '評測者', '樣品代號', '外觀得分', '口感得分', '氣味得分', '總計得分', '評測筆記'];
+            const headers = ['樣品類別', '評測者', '樣品代號', '外觀得分', '口感得分', '老化程度得分', '總計得分', '評測筆記'];
 
             const rows = [];
             categories.forEach(cat => {
                 ['A', 'B'].forEach(ver => {
                     const d = dataStore[cat][ver];
-                    const total = d.scores.appearance + d.scores.texture + d.scores.aroma;
+                    const total = d.scores.appearance + d.scores.texture + d.scores.aging;
                     rows.push([
                         cat,
                         assessor,
                         ver,
                         d.scores.appearance,
                         d.scores.texture,
-                        d.scores.aroma,
+                        d.scores.aging,
                         total,
                         normalizeCsvCell(d.evaluation || '')
                     ]);
@@ -311,7 +313,7 @@
                 .join('\n');
             const csvContent = BOM + csvBody;
 
-            const filename = `米飯盲測全數據報表_${new Date().toISOString().slice(0,10)}.csv`;
+            const filename = `壽司飯盲測全數據報表_${new Date().toISOString().slice(0,10)}.csv`;
             uploadCSVToDrive({ csvContent, filename, assessor });
         }
 
