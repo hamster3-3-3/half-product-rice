@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>壽司飯盲測評分系統</title>
+    <title>二期米測試(半成品)盲測表單</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap');
@@ -23,7 +23,7 @@
         <!-- Header -->
         <div class="flex flex-col md:flex-row justify-between items-center mb-6 border-b-2 border-gray-800 pb-6">
             <div class="text-center md:text-left">
-                <h1 class="text-3xl font-black text-gray-900 tracking-tight">壽司飯盲測評分系統</h1>
+                <h1 class="text-3xl font-black text-gray-900 tracking-tight">二期米測試(半成品)盲測表單</h1>
             </div>
             <div class="mt-4 md:mt-0 flex flex-wrap justify-center gap-3">
                 <button onclick="exportCSV()" class="bg-gray-900 text-white px-6 py-3 rounded-xl font-bold hover:bg-gray-800 transition shadow-lg flex items-center gap-2">
@@ -54,8 +54,8 @@
             <p class="text-gray-400 text-sm hidden md:block">切換 A/B 樣品時系統會自動保留您的選擇與筆記。</p>
         </div>
 
-        <!-- Tab Bar（已簡化為單一類別「飯糰」，因此不顯示 Tab） -->
-        <div id="tabContainer" class="hidden"></div>
+        <!-- 品項切換區 -->
+        <div id="tabContainer"></div>
 
         <!-- Form Container -->
         <div id="formContainer">
@@ -64,7 +64,7 @@
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row gap-4">
                     <div class="flex-1">
                         <label class="text-xs font-bold text-gray-400 uppercase block mb-1">樣品類別</label>
-                        <div class="text-2xl font-black text-gray-900 p-1">壽司飯</div>
+                        <div class="text-2xl font-black text-gray-900 p-1">新低溫飯</div>
                     </div>
                     <div class="w-full md:w-64">
                         <label class="text-xs font-bold text-gray-400 uppercase block mb-1">樣品編號</label>
@@ -85,6 +85,7 @@
         <div id="debug" class="mt-6 text-xs text-gray-500"></div>
     </div>
 
+    
     <script>
         /**
          * 按下「提交表單」時：
@@ -93,17 +94,109 @@
         const DRIVE_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbw-RUOruPvni0M37kDhtulr99Q4YwD-Sm9Jp9vNZfrHtfedQL2puekcX9bDSOpU9TWH/exec";
         const UPLOAD_TOKEN = "rice_test_2025";
 
-        // ✅ 類別已改為單一「飯糰」
-        let categories = ["壽司飯"];
+        const sampleOptions = {
+            A: "A",
+            B: "B"
+        };
+
+        const categories = [
+            "新低溫飯",
+            "11+16湖鹽飯",
+            "11+16肉鬆湖鹽飯",
+            "11+16壽司飯",
+            "一見鍾情飯",
+            "鼎泰豐-黃金蛋炒飯"
+        ];
+
+        const criteria = [
+            {
+                key: "color",
+                titleZh: "一、顏色(外觀)",
+                titleEn: "Color / Appearance",
+                gridClass: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3",
+                options: [
+                    { val: 1, score: 100, text: "1. 良好(米飯有光澤)" },
+                    { val: 2, score: 60, text: "2. 普通(無意見)" },
+                    { val: 3, score: 40, text: "3. 不良(顏色黯淡)" }
+                ]
+            },
+            {
+                key: "aroma",
+                titleZh: "二、香氣(飯香)",
+                titleEn: "Aroma",
+                gridClass: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3",
+                options: [
+                    { val: 1, score: 100, text: "1. 濃(米飯特有香氣)" },
+                    { val: 2, score: 60, text: "2. 普通(無意見)" },
+                    { val: 3, score: 40, text: "3. 淡(米糠臭味或添加物酸味)" }
+                ]
+            },
+            {
+                key: "grain",
+                titleZh: "三、粒感",
+                titleEn: "Grain Sensation",
+                gridClass: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3",
+                options: [
+                    { val: 1, score: 100, text: "1. 良好(口中可以明確感受1粒1粒)" },
+                    { val: 2, score: 60, text: "2. 普通(無意見)" },
+                    { val: 3, score: 40, text: "3. 不良(米粒破碎，整體黏糊)" }
+                ]
+            },
+            {
+                key: "firmness",
+                titleZh: "四、軟硬度",
+                titleEn: "Firmness",
+                gridClass: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3",
+                options: [
+                    { val: 1, score: 60, text: "1. 硬(口感偏硬)" },
+                    { val: 2, score: 100, text: "2. 適中(軟硬適中)" },
+                    { val: 3, score: 60, text: "3. 軟(口感偏軟)" }
+                ]
+            },
+            {
+                key: "taste",
+                titleZh: "五、味道",
+                titleEn: "Taste",
+                gridClass: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3",
+                options: [
+                    { val: 1, score: 100, text: "1. 良好(能感受到米飯甜味)" },
+                    { val: 2, score: 60, text: "2. 普通(無意見)" },
+                    { val: 3, score: 40, text: "3. 不良(米飯本身有酸臭味)" }
+                ]
+            },
+            {
+                key: "viscosity",
+                titleZh: "六、黏度",
+                titleEn: "Viscosity",
+                gridClass: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3",
+                options: [
+                    { val: 1, score: 100, text: "1. 良好(黏度剛剛好)" },
+                    { val: 2, score: 60, text: "2. 普通(無意見)" },
+                    { val: 3, score: 40, text: "3. 不良(口感乾硬乾燥)" }
+                ]
+            }
+        ];
+
         let dataStore = {};
         let currentCategoryIdx = 0;
 
+        function blankSampleState() {
+            const scores = {};
+            const valIdx = {};
+            criteria.forEach(item => {
+                scores[item.key] = 0;
+                valIdx[item.key] = null;
+            });
+            return { scores, evaluation: { color: '', aroma: '', grain: '', firmness: '', taste: '', viscosity: '' }, valIdx };
+        }
+
         function initDataStore() {
+            dataStore = {};
             categories.forEach(cat => {
                 dataStore[cat] = {
                     currentSelection: "A",
-                    A: { scores: { appearance: 40, texture: 40, aging: 20 }, evaluation: "", valIdx: { appearance: 3, texture: 3, aging: 1 } },
-                    B: { scores: { appearance: 40, texture: 40, aging: 20 }, evaluation: "", valIdx: { appearance: 3, texture: 3, aging: 1 } }
+                    A: blankSampleState(),
+                    B: blankSampleState()
                 };
             });
         }
@@ -111,11 +204,10 @@
         function init() {
             try {
                 initDataStore();
-                // 單一類別，不需要 tabs
+                renderTabs();
                 renderCurrentForm();
                 runTests();
 
-                // 友善：使用者輸入姓名後自動隱藏錯誤提示
                 const assessorEl = document.getElementById('globalAssessor');
                 if (assessorEl) {
                     assessorEl.addEventListener('input', () => {
@@ -130,92 +222,95 @@
             }
         }
 
+        function renderTabs() {
+            const container = document.getElementById('tabContainer');
+            if (!container) return;
+
+            container.className = "grid grid-cols-2 md:grid-cols-3 gap-3 mb-6";
+            container.innerHTML = categories.map((cat, idx) => `
+                <button
+                    onclick="switchCategory(${idx})"
+                    class="tab-btn bg-white border border-gray-200 rounded-2xl px-4 py-3 text-sm md:text-base font-bold shadow-sm hover:bg-gray-50 ${idx === currentCategoryIdx ? 'active' : ''}">
+                    ${cat}
+                </button>
+            `).join('');
+        }
+
+        function switchCategory(idx) {
+            currentCategoryIdx = idx;
+            renderTabs();
+            renderCurrentForm();
+        }
+
         function toggleSampleVersion(catName, version) {
             dataStore[catName].currentSelection = version;
             renderCurrentForm();
         }
 
+        
         function renderCurrentForm() {
-            const catName = categories[currentCategoryIdx]; // 永遠是「飯糰」
+            const catName = categories[currentCategoryIdx];
             const currentVersion = dataStore[catName].currentSelection;
             const currentData = dataStore[catName][currentVersion];
             const container = document.getElementById('formContainer');
 
+            const criteriaHtml = criteria.map((item, idx) => `
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <h2 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                        <span class="w-6 h-6 bg-gray-900 text-white rounded flex items-center justify-center text-xs">${idx + 1}</span>
+                        ${item.titleZh} <span class="text-sm text-gray-400 font-semibold">${item.titleEn}</span>
+                    </h2>
+                    <div class="${item.gridClass}">
+                        ${item.options.map(opt => renderScoreCard(
+                            catName,
+                            item.key,
+                            opt.val,
+                            opt.score,
+                            opt.text,
+                            currentData.valIdx[item.key] === opt.val
+                        )).join('')}
+                    </div>
+                    <div class="mt-3">
+                        <label class="block text-sm font-bold text-gray-700 mb-2">說明</label>
+                        <input
+                            type="text"
+                            value="${(currentData.evaluation && currentData.evaluation[item.key]) || ''}"
+                            oninput="updateItemNote('${item.key}', this.value)"
+                            class="w-full bg-gray-50 border-none rounded-xl p-3 text-sm focus:ring-2 focus:ring-gray-400 outline-none"
+                            placeholder="請輸入說明"
+                        >
+                    </div>
+                </div>
+            `).join('');
+
+            const totalRaw = Object.values(currentData.scores).reduce((a, b) => a + b, 0);
+            const totalPercent = Math.round((totalRaw / 600) * 1000) / 10;
+
             container.innerHTML = `
                 <div class="sample-form space-y-6">
-                    <!-- 資訊區 -->
                     <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row gap-4">
                         <div class="flex-1">
-                            <label class="text-xs font-bold text-gray-400 uppercase block mb-1">樣品類別</label>
+                            <label class="text-xs font-bold text-gray-400 uppercase block mb-1">品項</label>
                             <div class="text-2xl font-black text-gray-900 p-1">${catName}</div>
                         </div>
-                        <div class="w-full md:w-64">
+                        <div class="w-full md:w-72">
                             <label class="text-xs font-bold text-gray-400 uppercase block mb-1">樣品編號</label>
                             <div class="relative">
-                                <!-- ✅ 樣品編號 A/B 下拉可選 -->
                                 <select onchange="toggleSampleVersion('${catName}', this.value)"
-                                        class="w-full bg-gray-100 border-2 border-transparent focus:border-gray-900 rounded-xl p-3 font-mono font-bold text-gray-900 outline-none cursor-pointer">
-                                    <option value="A" ${currentVersion === 'A' ? 'selected' : ''}>A</option>
-                                    <option value="B" ${currentVersion === 'B' ? 'selected' : ''}>B</option>
+                                        class="w-full bg-gray-100 border-2 border-transparent focus:border-gray-900 rounded-xl p-3 font-bold text-gray-900 outline-none cursor-pointer">
+                                    <option value="A" ${currentVersion === 'A' ? 'selected' : ''}>${sampleOptions.A}</option>
+                                    <option value="B" ${currentVersion === 'B' ? 'selected' : ''}>${sampleOptions.B}</option>
                                 </select>
                                 <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-700">▼</div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- 評分區 (外觀) -->
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                        <h2 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                            <span class="w-6 h-6 bg-gray-900 text-white rounded flex items-center justify-center text-xs">1</span>
-                            一、外觀 (Appearance)
-                        </h2>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            ${renderScoreCard(catName, 'appearance', 1, 0,  '1. 飯粒不完整、光澤不均勻', currentData.valIdx.appearance === 1)}
-                            ${renderScoreCard(catName, 'appearance', 2, 20, '2. 飯粒不完整、光澤均勻', currentData.valIdx.appearance === 2)}
-                            ${renderScoreCard(catName, 'appearance', 3, 40, '3. 飯粒完整、光澤均勻', currentData.valIdx.appearance === 3)}
-                            ${renderScoreCard(catName, 'appearance', 4, 20, '4. 飯粒完整、光澤不均勻', currentData.valIdx.appearance === 4)}
-                        </div>
-                    </div>
-
-                    <!-- 評分區 (口感) -->
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                        <h2 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                            <span class="w-6 h-6 bg-gray-900 text-white rounded flex items-center justify-center text-xs">2</span>
-                            二、口感 (Texture)
-                        </h2>
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                            ${renderScoreCard(catName, 'texture', 1, 0, '1. 極硬', currentData.valIdx.texture === 1)}
-                            ${renderScoreCard(catName, 'texture', 2, 20, '2. 偏硬', currentData.valIdx.texture === 2)}
-                            ${renderScoreCard(catName, 'texture', 3, 40, '3. 軟硬適中', currentData.valIdx.texture === 3)}
-                            ${renderScoreCard(catName, 'texture', 4, 20, '4. 偏軟爛', currentData.valIdx.texture === 4)}
-                            ${renderScoreCard(catName, 'texture', 5, 0, '5. 極軟爛', currentData.valIdx.texture === 5)}
-                        </div>
-                    </div>
-
-                    
-                    <!-- 評分區 (老化程度) -->
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                        <h2 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                            <span class="w-6 h-6 bg-gray-900 text-white rounded flex items-center justify-center text-xs">3</span>
-                            三、老化程度 (Aging)
-                        </h2>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            ${renderScoreCard(catName, 'aging', 1, 20, '1. 完全無老化口感', currentData.valIdx.aging === 1)}
-                            ${renderScoreCard(catName, 'aging', 2, 10, '2. 些許老化', currentData.valIdx.aging === 2)}
-                            ${renderScoreCard(catName, 'aging', 3, 5,  '3. 大部分老化', currentData.valIdx.aging === 3)}
-                            ${renderScoreCard(catName, 'aging', 4, 0,  '4. 完全老化', currentData.valIdx.aging === 4)}
-                        </div>
-                    </div>
-
-                    <!-- 評價區 -->
-
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                        <label class="block text-sm font-bold text-gray-700 mb-3">評測筆記 (Flavor Notes)</label>
-                        <textarea oninput="updateEvaluation('${catName}', this.value)" rows="4" class="w-full bg-gray-50 border-none rounded-xl p-4 text-sm focus:ring-2 focus:ring-gray-400 outline-none" placeholder="描述此樣品的風味特徵...">${currentData.evaluation}</textarea>
-                    </div>
+${criteriaHtml}
                 </div>
             `;
         }
+
 
         function renderScoreCard(catName, category, val, score, text, isActive) {
             const activeClass = isActive ? 'active' : '';
@@ -235,28 +330,40 @@
             renderCurrentForm();
         }
 
-        function updateEvaluation(catName, value) {
+
+
+        function updateItemNote(itemKey, value) {
+            const catName = categories[currentCategoryIdx];
             const version = dataStore[catName].currentSelection;
-            dataStore[catName][version].evaluation = value;
+            if (!dataStore[catName][version].evaluation || typeof dataStore[catName][version].evaluation !== 'object') {
+                dataStore[catName][version].evaluation = { color: '', aroma: '', grain: '', firmness: '', taste: '', viscosity: '' };
+            }
+            dataStore[catName][version].evaluation[itemKey] = value;
         }
+
 
         function resetAll() {
             if(!confirm('這將清除所有已選數據，確定嗎？')) return;
-            location.reload();
+            initDataStore();
+            currentCategoryIdx = 0;
+            renderTabs();
+            renderCurrentForm();
+
+            const assessorEl = document.getElementById('globalAssessor');
+            if (assessorEl) assessorEl.value = '';
+            const err = document.getElementById('assessorError');
+            if (err) err.classList.add('hidden');
         }
 
-        // ✅ 提交成功後：清空所有表單選項與內容（讓填寫人一眼知道已完成）
         function clearAllAfterSubmit() {
-            // 清空評測者
             const assessorEl = document.getElementById('globalAssessor');
             if (assessorEl) assessorEl.value = '';
 
-            // 重新初始化所有資料（回到預設值）
             initDataStore();
             currentCategoryIdx = 0;
+            renderTabs();
             renderCurrentForm();
 
-            // 隱藏錯誤訊息並聚焦到評測者輸入框（方便下一位）
             const err = document.getElementById('assessorError');
             if (err) err.classList.add('hidden');
             if (assessorEl) assessorEl.focus();
@@ -283,26 +390,30 @@
             return val;
         }
 
+        
         function exportCSV() {
             const assessor = validateAssessorOrBlock();
             if (!assessor) return;
 
-            const headers = ['樣品類別', '評測者', '樣品代號', '外觀得分', '口感得分', '老化程度得分', '總計得分', '評測筆記'];
+            const headers = ['品項', '評測者', '樣品代號', '顏色(外觀)得分', '顏色(外觀)說明', '香氣(飯香)得分', '香氣(飯香)說明', '粒感得分', '粒感說明', '軟硬度得分', '軟硬度說明', '味道得分', '味道說明', '黏度得分', '黏度說明', '總分(百分制)'];
 
             const rows = [];
             categories.forEach(cat => {
                 ['A', 'B'].forEach(ver => {
                     const d = dataStore[cat][ver];
-                    const total = d.scores.appearance + d.scores.texture + d.scores.aging;
+                    const total = (d.scores.color || 0) + (d.scores.aroma || 0) + (d.scores.grain || 0) + (d.scores.firmness || 0) + (d.scores.taste || 0) + (d.scores.viscosity || 0);
+                    const totalPercent = Math.round((total / 600) * 1000) / 10;
                     rows.push([
                         cat,
                         assessor,
                         ver,
-                        d.scores.appearance,
-                        d.scores.texture,
-                        d.scores.aging,
-                        total,
-                        normalizeCsvCell(d.evaluation || '')
+                        d.scores.color || 0, d.evaluation?.color || '',
+                        d.scores.aroma || 0, d.evaluation?.aroma || '',
+                        d.scores.grain || 0, d.evaluation?.grain || '',
+                        d.scores.firmness || 0, d.evaluation?.firmness || '',
+                        d.scores.taste || 0, d.evaluation?.taste || '',
+                        d.scores.viscosity || 0, d.evaluation?.viscosity || '',
+                        totalPercent
                     ]);
                 });
             });
@@ -313,9 +424,10 @@
                 .join('\n');
             const csvContent = BOM + csvBody;
 
-            const filename = `壽司飯盲測全數據報表_${new Date().toISOString().slice(0,10)}.csv`;
+            const filename = `二期米測試(半成品)盲測表單_${new Date().toISOString().slice(0,10)}.csv`;
             uploadCSVToDrive({ csvContent, filename, assessor });
         }
+
 
         async function uploadCSVToDrive({ csvContent, filename, assessor }) {
             if (!DRIVE_WEBAPP_URL) {
@@ -347,8 +459,6 @@
                 }
 
                 alert('提交成功');
-
-                // ✅ 依需求：提交成功後清空所有表單內容/選項
                 clearAllAfterSubmit();
             } catch (err) {
                 console.error(err);
@@ -359,7 +469,7 @@
         function runTests() {
             const log = (msg) => {
                 const el = document.getElementById('debug');
-                el.textContent = msg;
+                if (el) el.textContent = msg;
             };
 
             try {
@@ -370,9 +480,8 @@
                 const doubled = String('x"y').replace(/"/g, '""');
                 console.assert(doubled === 'x""y', 'double quote escaping should work');
 
-                const BOM = "\uFEFF";
-                const csv = BOM + 'a,b';
-                console.assert(csv.charCodeAt(0) === 0xFEFF, 'CSV should start with BOM');
+                const totalMax = criteria.reduce((sum, item) => sum + Math.max(...item.options.map(opt => opt.score)), 0);
+                console.assert(totalMax === 600, 'Max total score should be 600');
 
                 log('Self-test: OK');
             } catch (e) {
@@ -382,5 +491,6 @@
 
         window.onload = init;
     </script>
+
 </body>
 </html>
