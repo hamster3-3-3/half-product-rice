@@ -116,8 +116,8 @@
                 gridClass: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3",
                 options: [
                     { val: 1, score: 100, text: "1. 良好(米飯有光澤)" },
-                    { val: 2, score: 60, text: "2. 普通(無意見)" },
-                    { val: 3, score: 40, text: "3. 不良(顏色黯淡)" }
+                    { val: 2, score: 70, text: "2. 普通(無意見)" },
+                    { val: 3, score: 50, text: "3. 不良(顏色黯淡)" }
                 ]
             },
             {
@@ -127,8 +127,8 @@
                 gridClass: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3",
                 options: [
                     { val: 1, score: 100, text: "1. 濃(米飯特有香氣)" },
-                    { val: 2, score: 60, text: "2. 普通(無意見)" },
-                    { val: 3, score: 40, text: "3. 淡(米糠臭味或添加物酸味)" }
+                    { val: 2, score: 70, text: "2. 普通(無意見)" },
+                    { val: 3, score: 50, text: "3. 淡(米糠臭味或添加物酸味)" }
                 ]
             },
             {
@@ -138,8 +138,8 @@
                 gridClass: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3",
                 options: [
                     { val: 1, score: 100, text: "1. 良好(口中可以明確感受1粒1粒)" },
-                    { val: 2, score: 60, text: "2. 普通(無意見)" },
-                    { val: 3, score: 40, text: "3. 不良(米粒破碎，整體黏糊)" }
+                    { val: 2, score: 70, text: "2. 普通(無意見)" },
+                    { val: 3, score: 50, text: "3. 不良(米粒破碎，整體黏糊)" }
                 ]
             },
             {
@@ -148,9 +148,9 @@
                 titleEn: "Firmness",
                 gridClass: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3",
                 options: [
-                    { val: 1, score: 60, text: "1. 硬(口感偏硬)" },
+                    { val: 1, score: 70, text: "1. 硬(口感偏硬)" },
                     { val: 2, score: 100, text: "2. 適中(軟硬適中)" },
-                    { val: 3, score: 60, text: "3. 軟(口感偏軟)" }
+                    { val: 3, score: 70, text: "3. 軟(口感偏軟)" }
                 ]
             },
             {
@@ -160,8 +160,8 @@
                 gridClass: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3",
                 options: [
                     { val: 1, score: 100, text: "1. 良好(能感受到米飯甜味)" },
-                    { val: 2, score: 60, text: "2. 普通(無意見)" },
-                    { val: 3, score: 40, text: "3. 不良(米飯本身有酸臭味)" }
+                    { val: 2, score: 70, text: "2. 普通(無意見)" },
+                    { val: 3, score: 50, text: "3. 不良(米飯本身有酸臭味)" }
                 ]
             },
             {
@@ -171,8 +171,8 @@
                 gridClass: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3",
                 options: [
                     { val: 1, score: 100, text: "1. 良好(黏度剛剛好)" },
-                    { val: 2, score: 60, text: "2. 普通(無意見)" },
-                    { val: 3, score: 40, text: "3. 不良(口感乾硬乾燥)" }
+                    { val: 2, score: 70, text: "2. 普通(無意見)" },
+                    { val: 3, score: 50, text: "3. 不良(口感乾硬乾燥)" }
                 ]
             }
         ];
@@ -390,6 +390,17 @@ ${criteriaHtml}
             return val;
         }
 
+
+        function getOptionLabelWithScore(itemKey, val, score) {
+            const criterion = criteria.find(c => c.key === itemKey);
+            if (!criterion) return String(score ?? '');
+            const option = criterion.options.find(opt => String(opt.val) === String(val));
+            if (!option) return String(score ?? '');
+            let label = option.text || '';
+            label = label.replace(/^\d+\.\s*/, '');
+            return `${label}(${option.score})`;
+        }
+
         
         function exportCSV() {
             const assessor = validateAssessorOrBlock();
@@ -401,18 +412,18 @@ ${criteriaHtml}
             categories.forEach(cat => {
                 ['A', 'B'].forEach(ver => {
                     const d = dataStore[cat][ver];
-                    const total = (d.scores.color || 0) + (d.scores.aroma || 0) + (d.scores.grain || 0) + (d.scores.firmness || 0) + (d.scores.taste || 0) + (d.scores.viscosity || 0);
+                    const total = Number(d.scores.color || 0) + Number(d.scores.aroma || 0) + Number(d.scores.grain || 0) + Number(d.scores.firmness || 0) + Number(d.scores.taste || 0) + Number(d.scores.viscosity || 0);
                     const totalPercent = Math.round((total / 600) * 1000) / 10;
                     rows.push([
                         cat,
                         assessor,
                         ver,
-                        d.scores.color || 0, d.evaluation?.color || '',
-                        d.scores.aroma || 0, d.evaluation?.aroma || '',
-                        d.scores.grain || 0, d.evaluation?.grain || '',
-                        d.scores.firmness || 0, d.evaluation?.firmness || '',
-                        d.scores.taste || 0, d.evaluation?.taste || '',
-                        d.scores.viscosity || 0, d.evaluation?.viscosity || '',
+                        getOptionLabelWithScore('color', d.valIdx?.color, d.scores.color), d.evaluation?.color || '',
+                        getOptionLabelWithScore('aroma', d.valIdx?.aroma, d.scores.aroma), d.evaluation?.aroma || '',
+                        getOptionLabelWithScore('grain', d.valIdx?.grain, d.scores.grain), d.evaluation?.grain || '',
+                        getOptionLabelWithScore('firmness', d.valIdx?.firmness, d.scores.firmness), d.evaluation?.firmness || '',
+                        getOptionLabelWithScore('taste', d.valIdx?.taste, d.scores.taste), d.evaluation?.taste || '',
+                        getOptionLabelWithScore('viscosity', d.valIdx?.viscosity, d.scores.viscosity), d.evaluation?.viscosity || '',
                         totalPercent
                     ]);
                 });
